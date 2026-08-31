@@ -2,4 +2,4 @@
 Déploiement automatisé du lab Linux (bastion, bkup, app, proxy, monitoring)
 
 # Lancer
-ansible-playbook -i inventory/prod site.yml
+ansible-playbook playbooks/site.yml
