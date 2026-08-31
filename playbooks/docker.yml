@@ -1,0 +1,6 @@
+- hosts: docker
+  become: true
+  roles:
+    - { role: geerlingguy.docker, tags: docker }
+    - { role: docker_utils, tags: dcutils }
+    - { role: cadvisor, tags: cadvisor }

@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -e
+
+BASE_DIR="/srv/docker"
+
+# Liste projets
+list_projects() {
+    find "$BASE_DIR" -maxdepth 2 -name docker-compose.yml \
+    | sed 's|/docker-compose.yml||' \
+    | sed "s|$BASE_DIR/||" \
+    | sort
+}
+
+# Aucun argument → liste
+if [[ -z "$1" ]]; then
+    list_projects
+    exit 0
+fi
+
+PROJECT="$1"
+COMPOSE_FILE="$BASE_DIR/$PROJECT/docker-compose.yml"
+
+# Projet invalide
+if [[ ! -f "$COMPOSE_FILE" ]]; then
+    echo "Error: project '$PROJECT' not found"
+    echo "Available projects:"
+    list_projects
+    exit 1
+fi
+
+# Mode interactif (si seulement projet)
+if [[ $# -eq 1 ]]; then
+    echo "Project: $PROJECT"
+    echo "Commands: up, down, restart, logs, pull"
+    read -p "> " cmd
+
+    case "$cmd" in
+        up)        set -- "$PROJECT" up -d ;;
+        down)      set -- "$PROJECT" down --remove-orphans ;;
+        restart)   set -- "$PROJECT" restart ;;
+        logs)      set -- "$PROJECT" logs -tf --tail=50 ;;
+        pull)      set -- "$PROJECT" pull ;;
+        *)         echo "Unknown command"; exit 1 ;;
+    esac
+fi
+
+# Exécution
+exec docker compose -f "$COMPOSE_FILE" "${@:2}"

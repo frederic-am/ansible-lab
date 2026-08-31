@@ -1,0 +1,15 @@
+http:
+  routers:
+    grafana:
+      rule: "Host(`graf.farnet.tech`)"
+      entryPoints: websecure
+      service: grafana
+      tls:
+        certResolver: letsencrypt
+        options: tls-opts@file
+
+  services:
+    grafana:
+      loadBalancer:
+        servers:
+          - url: "http://10.35.30.10:3000"

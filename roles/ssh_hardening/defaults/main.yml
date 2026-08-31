@@ -1,0 +1,6 @@
+# SSH service name (Debian = ssh, RHEL = sshd)
+ssh_service_name: ssh
+
+# Root login policy
+# possible values: yes, prohibit-password, forced-commands-only, no
+ssh_permit_root_login: "prohibit-password"

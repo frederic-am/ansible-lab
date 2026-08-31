@@ -1,0 +1,46 @@
+---
+- name: Create backup_admin user
+  ansible.builtin.user:
+    name: backup_admin
+    comment: Backup Administration
+    system: true
+    create_home: true
+    shell: /bin/bash
+
+- name: Create .ssh directory
+  ansible.builtin.file:
+    path: /home/backup_admin/.ssh
+    state: directory
+    owner: backup_admin
+    group: backup_admin
+    mode: "0700"
+
+- name: Generate restore SSH key pair
+  community.crypto.openssh_keypair:
+    path: /home/backup_admin/.ssh/backup_restore
+    type: ed25519
+    regenerate: never
+
+- name: Set private key attributes
+  ansible.builtin.file:
+    path: /home/backup_admin/.ssh/backup_restore
+    owner: backup_admin
+    group: backup_admin
+    mode: "0600"
+
+- name: Set public key attributes
+  ansible.builtin.file:
+    path: /home/backup_admin/.ssh/backup_restore.pub
+    owner: backup_admin
+    group: backup_admin
+    mode: "0644"
+
+- name: Install restore.sh
+  ansible.builtin.copy:
+    src: restore.sh
+    dest: /usr/local/sbin/restore.sh
+    owner: root
+    group: root
+    mode: "0755"
+
+    

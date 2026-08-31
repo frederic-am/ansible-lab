@@ -1,0 +1,39 @@
+groups:
+  - name: infrastructure
+    rules:
+
+      - alert: VmDown
+        expr: up{job="node"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ '{{' }} $labels.instance {{ '}}' }} is down"
+          description: "Node Exporter is unreachable for more than 2 minutes."
+
+      - alert: BackupFailed
+        expr: backup_status == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Backup failed for {{ '{{' }} $labels.target {{ '}}' }}"
+          description: "The last backup ended with an error."
+
+      - alert: BackupStale
+        expr: (time() - backup_last_success) > 86400
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Backup is older than 24 hours"
+          description: "No successful backup has been recorded for more than 24 hours."
+
+      - alert: DiskUsageHigh
+        expr: (100 - (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay",mountpoint="/"} * 100 / node_filesystem_size_bytes{fstype!~"tmpfs|overlay",mountpoint="/"})) > 90
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disk usage above 90% on {{ '{{' }} $labels.instance {{ '}}' }}"
+          description: "Filesystem {{ '{{' }} $labels.mountpoint {{ '}}' }} is above 90% usage."

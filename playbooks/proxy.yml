@@ -1,0 +1,5 @@
+- hosts: proxy
+  become: true
+  roles:
+  - { role: traefik, tags: traefik }
+  - { role: network-routing, tags: routing }

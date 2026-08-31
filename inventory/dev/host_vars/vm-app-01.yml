@@ -1,0 +1,17 @@
+backup_db_services:
+  - container: gitea-db
+    type: postgres
+    database: gitea
+    user: gitea
+
+backup_excludes:
+  - gitea/postgres/
+  - gitea/data/tmp/
+
+backup_restore_services:
+  - service: gitea
+    db_type: postgres
+    compose_service: db
+    database: gitea
+    user: gitea
+

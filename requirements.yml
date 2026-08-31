@@ -1,0 +1,12 @@
+roles:
+  - src: geerlingguy.docker
+    version: 8.0.0
+
+
+collections:
+  - name: community.docker
+    version: 5.2.0
+
+  - name: community.crypto
+    version: ">=3.0.0"
+

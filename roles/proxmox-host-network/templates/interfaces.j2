@@ -1,0 +1,75 @@
+# network interface settings; managed by Ansible
+
+auto lo
+iface lo inet loopback
+
+iface enp1s0 inet manual
+iface wlo1 inet manual
+
+
+auto vmbr0
+iface vmbr0 inet static
+    address {{ proxmox_vmbr0_address }}
+    gateway {{ proxmox_vmbr0_gateway }}
+    bridge-ports enp1s0
+    bridge-stp off
+    bridge-fd 0
+
+
+auto vmbr1
+iface vmbr1 inet static
+    address {{ proxmox_vmbr1_address }}
+    bridge-ports none
+    bridge-stp off
+    bridge-fd 0
+{% if proxmox_vmbr1_ip_forward | default(false) %}
+    ip-forward on
+{% endif %}
+
+
+auto vmbr2
+iface vmbr2 inet manual
+    bridge-ports none
+    bridge-stp off
+    bridge-fd 0
+    bridge-vlan-aware yes
+    bridge-vids 2-4094
+{% if proxmox_vmbr2_ip_forward | default(false) %}
+    ip-forward on
+{% endif %}
+
+auto vmbr2.10
+iface vmbr2.10 inet static
+    address {{ proxmox_vmbr2_10_address }}
+    ip-forward on
+
+
+auto vmbr2.20
+iface vmbr2.20 inet static
+    address {{ proxmox_vmbr2_20_address }}
+    ip-forward on
+
+
+auto vmbr2.30
+iface vmbr2.30 inet static
+    address {{ proxmox_vmbr2_30_address }}
+    ip-forward on
+
+
+auto vmbr2.40
+iface vmbr2.40 inet static
+    address {{ proxmox_vmbr2_40_address }}
+    ip-forward on
+
+
+auto vmbr3
+iface vmbr3 inet static
+    address {{ proxmox_vmbr3_address }}
+    bridge-ports none
+    bridge-stp off
+    bridge-fd 0
+{% if proxmox_vmbr3_ip_forward | default(false) %}
+    ip-forward on
+{% endif %}
+
+source /etc/network/interfaces.d/*

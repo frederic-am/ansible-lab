@@ -1,0 +1,61 @@
+- name: Install nginx
+  apt:
+    name: nginx
+    state: present
+    update_cache: yes
+
+- name: Ensure nginx is running
+  service:
+    name: nginx
+    state: started
+    enabled: true
+
+- name: Deploy web page
+  copy:
+    content: "{{ inventory_hostname }}"
+    dest: /var/www/html/index.html
+    owner: www-data
+    group: www-data
+    mode: "0644"
+
+# =========================
+# FIREWALL SAFE REBUILD
+# =========================
+
+- name: Ensure UFW is installed
+  apt:
+    name: ufw
+    state: present
+
+- name: Allow SSH BEFORE enabling firewall
+  ufw:
+    rule: allow
+    port: 22
+    proto: tcp
+
+- name: Reset UFW safely
+  command: ufw --force reset
+
+- name: Re-allow SSH after reset
+  ufw:
+    rule: allow
+    port: 22
+    proto: tcp
+
+- name: Enable UFW with default deny
+  ufw:
+    state: enabled
+    policy: deny
+
+- name: Allow HTTP from proxy only
+  ufw:
+    rule: allow
+    src: "{{ hostvars[groups['proxy'][0]].ansible_host }}"
+    port: 80
+    proto: tcp
+
+- name: Deny HTTP from others
+  ufw:
+    rule: deny
+    port: 80
+    proto: tcp

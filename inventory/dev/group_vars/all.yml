@@ -1,0 +1,11 @@
+env: dev
+domain: farnet.tech
+backup_server_ip: 10.35.0.13
+
+timezone: Europe/Paris
+admin_user: bob
+
+## DATADIR
+app_data_dir: /srv/docker
+
+backup_server: ct-backup-01

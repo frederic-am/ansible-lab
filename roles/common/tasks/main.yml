@@ -1,0 +1,41 @@
+- name: Update apt cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install base packages
+  apt:
+    name:
+      - vim
+      - curl
+      - git
+      - htop
+      - rsync
+      - ufw
+    state: present
+
+- name: Set timezone
+  timezone:
+    name: "{{ timezone }}"
+
+- name: Ensure admin user exists
+  user:
+    name: "{{ admin_user }}"
+    groups: sudo
+    append: yes
+    shell: /bin/bash
+
+- name: Add hosts entries
+  lineinfile:
+    path: /etc/hosts
+    line: "{{ hostvars[item].ansible_host }} {{ item }}"
+    state: present
+  loop: "{{ groups['all'] }}"
+
+- name: Copier .bash_aliases pour admin
+  copy:
+    src: bash_aliases_admin
+    dest: "/home/{{ admin_user }}/.bash_aliases"
+    owner: "{{ admin_user }}"
+    group: "{{ admin_user }}"
+    mode: '0644'

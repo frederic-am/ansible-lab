@@ -1,0 +1,17 @@
+- name: Create cadvisor directory
+  file:
+    path: /srv/docker/cadvisor
+    state: directory
+    mode: "0755"
+
+- name: Deploy cadvisor compose
+  template:
+    src: docker-compose.yml.j2
+    dest: /srv/docker/cadvisor/docker-compose.yml
+    mode: "0644"
+
+- name: Start cadvisor
+  community.docker.docker_compose_v2:
+    project_src: /srv/docker/cadvisor
+    state: present
+    

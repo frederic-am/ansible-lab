@@ -1,0 +1,10 @@
+- import_playbook: bootstrap.yml
+- import_playbook: proxmox.yml
+- import_playbook: security.yml
+- import_playbook: docker.yml
+- import_playbook: apps.yml
+- import_playbook: proxy.yml
+- import_playbook: node_exporter.yml
+- import_playbook: monitoring.yml
+- import_playbook: backup.yml
+

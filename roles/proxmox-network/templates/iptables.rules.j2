@@ -1,0 +1,67 @@
+*nat
+:PREROUTING ACCEPT [0:0]
+:INPUT ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+:POSTROUTING ACCEPT [0:0]
+
+-A POSTROUTING -s 10.10.0.0/24 -o vmbr0 -j MASQUERADE
+-A POSTROUTING -s 10.34.0.0/24 -o vmbr0 -j MASQUERADE
+-A POSTROUTING -s 10.35.0.0/16 -o vmbr0 -j MASQUERADE
+
+COMMIT
+
+*filter
+:INPUT ACCEPT [0:0]
+:FORWARD ACCEPT [0:0]
+:OUTPUT ACCEPT [0:0]
+
+# Host management access
+-A INPUT -p tcp --dport 22 -j ACCEPT
+-A INPUT -p tcp --dport 8006 -j ACCEPT
+
+# Established traffic
+-A FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+
+-A FORWARD -p icmp -j ACCEPT
+
+# Non-lab traffic (infra perso / LAN)
+-A FORWARD -s 10.10.0.0/24 -j ACCEPT
+-A FORWARD -s 10.34.0.0/24 -j ACCEPT
+-A FORWARD -d 10.10.0.0/24 -j ACCEPT
+-A FORWARD -d 10.34.0.0/24 -j ACCEPT
+-A FORWARD -s 192.168.0.0/24 -j ACCEPT
+-A FORWARD -d 192.168.0.0/24 -j ACCEPT
+
+# Bastion admin
+-A FORWARD -s 10.35.10.14/32 -p tcp --dport 22 -j ACCEPT
+
+# Proxy -> App (Gitea, graf, prom)
+-A FORWARD -s 10.35.10.10/32 -d 10.35.20.10/32 -p tcp --dport 3000 -j ACCEPT
+-A FORWARD -s 10.35.10.10/32 -d 10.35.30.10/32 -p tcp --dport 3000 -j ACCEPT
+-A FORWARD -s 10.35.10.10/32 -d 10.35.30.10/32 -p tcp --dport 9090 -j ACCEPT
+
+# Monitor -> Nodes
+-A FORWARD -s 10.35.30.10/32 -p tcp --dport 9100 -j ACCEPT
+-A FORWARD -s 10.35.30.10/32 -p tcp --dport 18080 -j ACCEPT
+-A FORWARD -s 10.35.30.10/32 -d 10.35.10.10/32 -p tcp --dport 8082 -j ACCEPT
+
+# Backup -> App
+-A FORWARD -s 10.35.40.10/32 -d 10.35.20.10/32 -p tcp --dport 22 -j ACCEPT
+-A FORWARD -s 10.35.40.10/32 -d 10.35.20.10/32 -p tcp --dport 873 -j ACCEPT
+
+# Backup -> Proxy
+-A FORWARD -s 10.35.40.10/32 -d 10.35.10.10/32 -p tcp --dport 22 -j ACCEPT
+-A FORWARD -s 10.35.40.10/32 -d 10.35.10.10/32 -p tcp --dport 873 -j ACCEPT
+
+# DNS
+-A FORWARD -s 10.35.0.0/16 -d 192.168.0.62/32 -p udp --dport 53 -j ACCEPT
+-A FORWARD -s 10.35.0.0/16 -d 192.168.0.62/32 -p tcp --dport 53 -j ACCEPT
+
+# Internet
+-A FORWARD -s 10.35.0.0/16 -p tcp --dport 80 -j ACCEPT
+-A FORWARD -s 10.35.0.0/16 -p tcp --dport 443 -j ACCEPT
+
+# Default deny for lab
+-A FORWARD -s 10.35.0.0/16 -j DROP
+
+COMMIT

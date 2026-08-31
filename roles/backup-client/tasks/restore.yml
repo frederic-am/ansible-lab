@@ -1,0 +1,56 @@
+---
+- name: Create backup_admin user
+  ansible.builtin.user:
+    name: backup_admin
+    comment: Backup Administration
+    system: true
+    create_home: true
+    shell: /bin/bash
+
+- name: Create .ssh directory
+  ansible.builtin.file:
+    path: /home/backup_admin/.ssh
+    state: directory
+    owner: backup_admin
+    group: backup_admin
+    mode: "0700"
+
+- name: Read restore public key from backup server
+  ansible.builtin.slurp:
+    src: /home/backup_admin/.ssh/backup_restore.pub
+  delegate_to: "{{ groups['backup'][0] }}"
+  register: backup_restore_key
+
+- name: Install restore public key
+  ansible.posix.authorized_key:
+    user: backup_admin
+    key: "{{ backup_restore_key.content | b64decode | trim }}"
+    state: present
+
+- name: Allow backup_admin to run docker-restore.sh as root
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/backup_admin
+    owner: root
+    group: root
+    mode: "0440"
+    content: |
+      backup_admin ALL=(root) NOPASSWD: /usr/bin/rsync, /usr/local/sbin/docker-restore.sh
+    validate: "visudo -cf %s"
+
+- name: Install restore configuration
+  ansible.builtin.template:
+    src: restore.conf.j2
+    dest: /etc/backup/restore.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Install docker-restore.sh
+  ansible.builtin.copy:
+    src: docker-restore.sh
+    dest: /usr/local/sbin/docker-restore.sh
+    owner: root
+    group: root
+    mode: "0755"
+
+

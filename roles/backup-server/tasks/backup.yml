@@ -1,0 +1,81 @@
+- name: Ensure backup runner user exists
+  user:
+    name: backup_runner
+    shell: /usr/sbin/nologin
+    create_home: yes
+
+- name: Ensure .ssh directory exists
+  file:
+    path: /home/backup_runner/.ssh
+    state: directory
+    owner: backup_runner
+    group: backup_runner
+    mode: "0700"
+
+- name: Generate backup SSH key
+  openssh_keypair:
+    path: /home/backup_runner/.ssh/backup_rsync
+    type: ed25519
+    owner: backup_runner
+    group: backup_runner
+    mode: "0600"
+    force: false
+
+- name: Create backup configuration directory
+  ansible.builtin.file:
+    path: /etc/backup
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+    
+- name: Generate exclude files
+  ansible.builtin.template:
+    src: excludes.txt.j2
+    dest: "/etc/backup/{{ host }}.txt"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ groups['docker'] }}"
+  loop_control:
+    loop_var: host
+
+- name: Install backup script
+  copy:
+    src: docker-backup.sh
+    dest: /usr/local/sbin/docker-backup.sh
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Allow backup_runner to run rsync as root
+  copy:
+    dest: /etc/sudoers.d/backup_runner
+    content: |
+      backup_runner ALL=(root) NOPASSWD: /usr/bin/rsync, /usr/bin/rm
+    owner: root
+    group: root
+    mode: '0440'
+    validate: 'visudo -cf %s'
+
+- name: Create backup directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: backup_runner
+    group: backup_runner
+    mode: "0755"
+  loop:
+    - /srv/backups/docker
+    - /var/log/docker-backup
+
+- name: Install cron jobs
+  cron:
+    name: "docker backup {{ item }}"
+    user: backup_runner
+    job: "/usr/local/sbin/docker-backup.sh {{ item }}"
+    hour: "2"
+    minute: "{{ (10 + (groups['docker'].index(item) * 20)) % 60 }}"
+  loop: "{{ groups['docker'] }}"
+
+  

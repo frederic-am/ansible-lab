@@ -1,0 +1,10 @@
+http:
+  routers:
+    traefik-dashboard:
+      rule: "Host(`traefik.farnet.tech`)"
+      service: api@internal
+      entryPoints:
+        - websecure
+      middlewares:
+        - chain-basic-auth
+      tls: {}

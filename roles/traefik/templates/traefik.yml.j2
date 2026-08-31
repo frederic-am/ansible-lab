@@ -1,0 +1,59 @@
+global:
+  checkNewVersion: true
+  sendAnonymousUsage: false
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+
+  websecure:
+    address: ":443"
+    http3: {}
+    forwardedHeaders:
+      trustedIPs:
+        - 127.0.0.1/32
+        - 10.0.0.0/8
+    http:
+      tls:
+        options: tls-opts@file
+        certResolver: letsencrypt
+
+  metrics:
+    address: ":8082"
+
+providers:
+  file:
+    directory: /etc/traefik/conf
+    watch: true
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: "{{ vault_letsencrypt_email }}"
+      storage: /etc/traefik/acme/acme.json
+      tlsChallenge: true
+
+api:
+  dashboard: true
+  insecure: false
+
+metrics:
+  prometheus:
+    entryPoint: metrics
+
+log:
+  level: WARN
+  filePath: /logs/traefik.log
+
+accessLog:
+  filePath: /logs/access.log
+  bufferingSize: 100
+  filters:
+    statusCodes:
+      - "400-599"

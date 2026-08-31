@@ -1,0 +1,5 @@
+- hosts: all
+  become: true
+  roles:
+    - { role: common, tags: common }
+    - { role: ssh_hardening, tags: ssh }

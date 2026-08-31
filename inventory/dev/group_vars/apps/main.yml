@@ -1,0 +1,12 @@
+db_backup_containers:
+  - name: gitea-db
+    type: postgres
+    user: gitea
+
+
+#---------------------------------------------------------
+## GITEA
+#---------------------------------------------------------
+gitea_db_user: gitea
+gitea_db_name: gitea
+gitea_db_host: db

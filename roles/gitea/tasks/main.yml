@@ -1,0 +1,42 @@
+- name: Ensure base Gitea directory
+  file:
+    path: /srv/docker/gitea
+    state: directory
+    owner: "{{ admin_user }}"
+    mode: "0755"
+
+- name: Ensure Gitea data and config directories (rootless)
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "1000"
+    group: "1000"
+    mode: "0755"
+    recurse: yes
+  loop:
+    - /srv/docker/gitea/data
+    - /srv/docker/gitea/config
+
+- name: Deploy docker-compose
+  template:
+    src: docker-compose.yml.j2
+    dest: /srv/docker/gitea/docker-compose.yml
+    owner: "{{ admin_user }}"
+    mode: "0644"
+    validate: docker compose -f %s config
+  notify: restart gitea
+
+- name: Ensure Gitea stack is running
+  command: docker compose up -d
+  args:
+    chdir: /srv/docker/gitea
+  changed_when: false
+
+- name: Wait for Gitea HTTP
+  uri:
+    url: "http://localhost:3000"
+    status_code: 200
+  register: result
+  retries: 10
+  delay: 3
+  until: result.status == 200

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+set -e
+
+for compose_file in /srv/docker/**/docker-compose.yml; do
+    docker compose -f "$compose_file" "$@"
+done

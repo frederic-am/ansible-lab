@@ -1,0 +1,10 @@
+tls:
+  options:
+    tls-opts:
+      minVersion: VersionTLS12
+
+      curvePreferences:
+        - CurveP256
+        - CurveP384
+
+      sniStrict: true

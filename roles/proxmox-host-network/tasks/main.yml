@@ -1,0 +1,12 @@
+---
+- name: Deploy network interfaces
+  template:
+    src: interfaces.j2
+    dest: /etc/network/interfaces
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Reload network configuration
+  command: ifreload -a
+  

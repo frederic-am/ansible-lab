@@ -1,0 +1,17 @@
+http:
+  routers:
+    prometheus:
+      rule: "Host(`prom.farnet.tech`)"
+      entryPoints: websecure
+      service: prometheus
+      tls:
+        certResolver: letsencrypt
+        options: tls-opts@file
+      middlewares:
+        - chain-basic-auth
+
+  services:
+    prometheus:
+      loadBalancer:
+        servers:
+          - url: "http://10.35.30.10:9090"

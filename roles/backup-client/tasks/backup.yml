@@ -1,0 +1,105 @@
+- name: Ensure backup_ro user exists
+  user:
+    name: backup_ro
+    shell: /bin/bash
+    create_home: yes
+
+- name: Ensure .ssh directory
+  file:
+    path: /home/backup_ro/.ssh
+    state: directory
+    owner: backup_ro
+    group: backup_ro
+    mode: "0700"
+
+- name: Install rsync (for rrsync)
+  apt:
+    name: rsync
+    state: present
+    update_cache: yes
+
+- name: Allow backup_ro to run db-backup as root
+  copy:
+    dest: /etc/sudoers.d/backup_ro
+    owner: root
+    group: root
+    mode: "0440"
+    content: |
+      backup_ro ALL=(root) NOPASSWD: /usr/local/sbin/db-backup.sh, /usr/bin/rrsync
+      Defaults:backup_ro env_keep += "SSH_ORIGINAL_COMMAND"
+    validate: "visudo -cf %s"
+
+- name: Deploy rrsync wrapper
+  copy:
+    dest: /usr/local/sbin/rrsync-wrapper.sh
+    owner: root
+    group: root
+    mode: "0755"
+    content: |
+      #!/bin/bash
+
+      case "$SSH_ORIGINAL_COMMAND" in
+        rsync\ *)
+          exec sudo SSH_ORIGINAL_COMMAND="$SSH_ORIGINAL_COMMAND" /usr/bin/rrsync /
+          ;;
+        /usr/local/sbin/db-backup.sh)
+          exec sudo /usr/local/sbin/db-backup.sh
+          ;;
+        *)
+          echo "Denied"
+          exit 1
+          ;;
+      esac
+
+- name: Ensure backup server public key exists
+  ansible.builtin.stat:
+    path: /home/backup_runner/.ssh/backup_rsync.pub
+  delegate_to: "{{ backup_server }}"
+  register: backup_key
+  run_once: true
+
+- name: Fail if backup server key is missing
+  ansible.builtin.fail:
+    msg: "Backup server public key not found. Deploy backup-server first."
+  when: not backup_key.stat.exists
+
+- name: Read backup server public key
+  ansible.builtin.slurp:
+    src: /home/backup_runner/.ssh/backup_rsync.pub
+  delegate_to: "{{ backup_server }}"
+  register: backup_public_key_file
+  run_once: true
+
+- name: Install restricted backup public key
+  ansible.posix.authorized_key:
+    user: backup_ro
+    key: "{{ backup_public_key_file.content | b64decode }}"
+    key_options: 'from="{{ hostvars[groups["backup"][0]].ansible_host }}",command="/usr/local/sbin/rrsync-wrapper.sh",no-agent-forwarding,no-port-forwarding,no-X11-forwarding,no-pty'
+
+# DB-BACKUP
+
+- name: Create config directory
+  file:
+    path: /etc/backup
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+
+- name: Install db-backup script
+  copy:
+    src: db-backup.sh
+    dest: /usr/local/sbin/db-backup.sh
+    owner: root
+    group: root
+    mode: "0755"
+
+    
+- name: Install database backup configuration
+  ansible.builtin.template:
+    src: db-backup.conf.j2
+    dest: /etc/backup/db-backup.conf
+    owner: root
+    group: root
+    mode: "0644"

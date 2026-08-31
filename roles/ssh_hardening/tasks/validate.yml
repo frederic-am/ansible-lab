@@ -1,0 +1,13 @@
+- name: Check admin user exists
+  command: getent passwd {{ admin_user }}
+  changed_when: false
+
+- name: Check SSH key exists
+  stat:
+    path: /home/{{ admin_user }}/.ssh/authorized_keys
+  register: admin_keys
+
+- name: Fail if no SSH access
+  fail:
+    msg: "SSH hardening refused: no valid SSH key"
+  when: not admin_keys.stat.exists

@@ -1,0 +1,9 @@
+- hosts: backup
+  become: true
+  roles:
+    - { role: backup-server, tags: backup_server }
+
+- hosts: docker
+  become: true
+  roles:
+    - { role: backup-client, tags: backup_client}

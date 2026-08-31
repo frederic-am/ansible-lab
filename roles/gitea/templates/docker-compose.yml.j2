@@ -1,0 +1,52 @@
+services:
+  gitea:
+    image: gitea/gitea:1.22-rootless
+    container_name: gitea
+    restart: unless-stopped
+    environment:
+      - TZ={{ timezone }}
+      - GITEA__server__DOMAIN=git.{{ domain }}
+      - GITEA__server__ROOT_URL=https://git.{{ domain }}
+      - GITEA__server__SSH_DOMAIN=git.{{ domain }}
+      - GITEA__server__SSH_PORT=2222
+      - GITEA__database__DB_TYPE=postgres
+      - GITEA__database__HOST={{ gitea_db_host }}:5432
+      - GITEA__database__NAME={{ gitea_db_name }}
+      - GITEA__database__USER={{ gitea_db_user }}
+      - GITEA__database__PASSWD={{ vault_gitea_db_password }}
+      - GITEA__cache__ADAPTER=redis
+      - GITEA__cache__HOST=redis://redis:6379/0?pool_size=100&idle_timeout=180s
+      - GITEA__cache__ITEM_TTL=24h
+    volumes:
+      - "{{ app_data_dir }}/gitea/data:/var/lib/gitea"
+      - "{{ app_data_dir }}/gitea/config:/etc/gitea"
+    ports:
+      - "3000:3000"
+      - "2222:2222"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - default
+
+  db:
+    image: postgres:16-alpine
+    container_name: gitea-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB={{ gitea_db_name }}
+      - POSTGRES_USER={{ gitea_db_user }}
+      - POSTGRES_PASSWORD={{ vault_gitea_db_password }}
+    volumes:
+      - "{{ app_data_dir }}/gitea/postgres:/var/lib/postgresql/data"
+    networks:
+      - default
+
+  redis:
+    image: redis:7-alpine
+    container_name: gitea-redis
+    restart: unless-stopped
+    volumes:
+      - "{{ app_data_dir }}/gitea/redis:/data"
+    networks:
+      - default

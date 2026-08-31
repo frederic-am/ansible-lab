@@ -1,0 +1,5 @@
+network_static_routes:
+  - network: 10.35.0.0/16
+    via: 10.35.10.1
+    dev: eth1
+    

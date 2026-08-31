@@ -1,0 +1,57 @@
+- name: Ensure Traefik directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  loop:
+    - /srv/docker/traefik
+    - /srv/docker/traefik/logs
+    - /srv/docker/traefik/acme
+    - /srv/docker/traefik/secrets
+
+- name: Create ACME file
+  file:
+    path: /srv/docker/traefik/acme/acme.json
+    state: touch
+    owner: root
+    group: root
+    mode: "0600"
+
+- name: Deploy Traefik config
+  template:
+    src: traefik.yml.j2
+    dest: /srv/docker/traefik/traefik.yml
+    owner: root
+    group: root
+    mode: "0644"
+  notify: restart traefik
+
+- name: Deploy Traefik dynamic config
+  copy:
+    src: conf.d/
+    dest: /srv/docker/traefik/conf.d/
+    owner: root
+    group: root
+    mode: "0644"
+    directory_mode: "0755"
+  notify: restart traefik
+
+- name: Deploy docker-compose
+  template:
+    src: docker-compose.yml.j2
+    dest: /srv/docker/traefik/docker-compose.yml
+    owner: root
+    group: root
+    mode: "0644"
+    validate: docker compose -f %s config
+  notify: restart traefik
+
+- name: Install basic auth
+  copy:
+    dest: /srv/docker/traefik/secrets/basic_auth_credentials
+    content: "{{ vault_traefik_basic_auth }}"
+    owner: root
+    group: root
+    mode: "0600"

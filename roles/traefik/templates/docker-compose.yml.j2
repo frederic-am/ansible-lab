@@ -1,0 +1,25 @@
+services:
+  traefik:
+    image: traefik:3.7
+    container_name: traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "80:80"
+      - "443:443/tcp"
+      - "443:443/udp"
+      - "8082:8082"
+    volumes:
+      - /srv/docker/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - /srv/docker/traefik/conf.d:/etc/traefik/conf:ro
+      - /srv/docker/traefik/acme/acme.json:/etc/traefik/acme/acme.json
+      - /srv/docker/traefik/logs:/logs
+    environment:
+      TZ: Europe/Paris
+    secrets:
+      - basic_auth_credentials
+
+secrets:
+  basic_auth_credentials:
+    file: /srv/docker/traefik/secrets/basic_auth_credentials

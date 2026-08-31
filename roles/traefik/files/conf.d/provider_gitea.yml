@@ -1,0 +1,17 @@
+http:
+  routers:
+    gitea:
+      rule: Host(`git.farnet.tech`)
+      entryPoints: websecure
+      service: gitea
+      tls:
+        certResolver: letsencrypt
+        options: tls-opts@file
+      middlewares:
+        - chain-gitea
+
+  services:
+    gitea:
+      loadBalancer:
+        servers:
+          - url: "http://10.35.20.10:3000"

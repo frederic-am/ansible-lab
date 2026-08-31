@@ -1,0 +1,11 @@
+- name: Ensure static routes are present
+  blockinfile:
+    path: /etc/network/interfaces
+    marker: "# {mark} ANSIBLE STATIC ROUTES"
+    block: |
+      {% for route in network_static_routes %}
+      post-up ip route replace {{ route.network }} via {{ route.via }} dev {{ route.dev }}
+      post-down ip route del {{ route.network }} via {{ route.via }} dev {{ route.dev }} || true
+      {% endfor %}
+  when: network_static_routes | length > 0
+  

@@ -1,0 +1,52 @@
+http:
+  middlewares:
+
+    security-headers:
+      headers:
+        browserXssFilter: true
+        contentTypeNosniff: true
+        customFrameOptionsValue: "SAMEORIGIN"
+        forceSTSHeader: true
+        stsSeconds: 63072000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        referrerPolicy: "strict-origin-when-cross-origin"
+        customResponseHeaders:
+          X-Robots-Tag: "none"
+          Server: ""
+
+    rate-limit:
+      rateLimit:
+        average: 100
+        burst: 50
+
+    basic-auth:
+      basicAuth:
+        usersFile: /run/secrets/basic_auth_credentials
+        removeHeader: true
+
+    chain-basic-auth:
+      chain:
+        middlewares:
+          - rate-limit
+          - security-headers
+          - basic-auth
+
+    chain-no-auth:
+      chain:
+        middlewares:
+          - rate-limit
+          - security-headers
+
+    gitea-secure-headers:
+      headers:
+        contentTypeNosniff: true
+        browserXssFilter: true
+        customFrameOptionsValue: "SAMEORIGIN"
+
+    chain-gitea:
+      chain:
+        middlewares:
+          - rate-limit
+          - security-headers
+          - gitea-secure-headers

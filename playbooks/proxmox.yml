@@ -1,0 +1,5 @@
+- hosts: proxmox
+  become: true
+  roles:
+    - { role: proxmox-host-network, tags: proxmox-host-network }
+    - { role: proxmox-network, tags: proxmox-network }

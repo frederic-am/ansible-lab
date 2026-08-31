@@ -1,0 +1,214 @@
+#------------------------------------------------------------------------------
+# BASE CONFIG
+#------------------------------------------------------------------------------
+
+# Prompt
+
+export PS1="[\[\e[32m\]\u\[\e[m\]@\[\e[33m\]\h\[\e[m\]: \[\e[36m\]\w\[\e[m\]]\\$ "
+## export PS1="[\[\e[32m\]\u\[\e[m\]@\[\e[33m\]\h\[\e[m\]: \\$\[\e[36m\]\w\[\e[m\]]\\$ "      # Colorized prompt showing user@host: path$
+
+# Ensure bash
+
+[ -n "$BASH_VERSION" ] || return
+
+#------------------------------------------------------------------------------ 
+# PATH
+#------------------------------------------------------------------------------
+
+# export PATH="$HOME/docker-utils:$PATH"
+
+#------------------------------------------------------------------------------
+# DOCKER (MODERN - via dc)
+#------------------------------------------------------------------------------
+
+# Global
+
+alias dcall='dc-all'  
+alias dcupdate='dc-update-all'  
+alias dchard='dc-hard-restart'
+
+# Per project
+
+_dc_check() {
+if [[ -z "$1" ]]; then
+echo "Usage: "
+return 1
+fi
+
+_dc_autocomplete() {
+    local cur prev projects
+
+    cur="${COMP_WORDS[COMP_CWORD]}"
+
+    projects=$(find /srv/docker -maxdepth 2 -name docker-compose.yml \
+        | sed 's|/docker-compose.yml||' \
+        | sed 's|/srv/docker/||')
+
+    COMPREPLY=( $(compgen -W "$projects" -- "$cur") )
+}
+
+complete -F _dc_autocomplete dc
+
+local compose_file="/srv/docker/$1/docker-compose.yml"
+
+if [[ ! -f "$compose_file" ]]; then
+    echo "Error: project '$1' not found ($compose_file)"
+    return 1
+fi
+
+}
+
+dcup() {
+_dc_check "$1" || return
+dc "$1" up -d
+}
+
+dcdown() {
+_dc_check "$1" || return
+dc "$1" down --remove-orphans
+}
+
+dcstop() {
+_dc_check "$1" || return
+dc "$1" stop
+}
+
+dcstart() {
+_dc_check "$1" || return
+dc "$1" start
+}
+
+dcrestart() {
+_dc_check "$1" || return
+dc "$1" restart
+}
+
+dclogs() {
+_dc_check "$1" || return
+dc "$1" logs -tf --tail=50
+}
+
+dcpull() {
+_dc_check "$1" || return
+dc "$1" pull
+}
+
+#------------------------------------------------------------------------------
+# DOCKER (LOW LEVEL)
+#------------------------------------------------------------------------------
+
+alias dps='sudo docker ps -a'  
+alias dpss='sudo docker ps -a --format "table {{.Names}}\t{{.State}}\t{{.Status}}\t{{.Image}}" | (sed -u 1q; sort)'  
+alias ddf='sudo docker system df'  
+alias dexec='sudo docker exec -ti'
+
+alias dlogs='sudo docker logs -tf --tail=50'  
+alias dstop='sudo docker stop'  
+alias dstopall='sudo docker ps -aq | xargs -r sudo docker stop'
+alias drm='sudo docker ps -aq | xargs -r sudo docker rm'
+
+alias dsvprune="docker system prune -f --volumes"
+
+alias dprunevol='sudo docker volume prune'  
+alias dprunesys='sudo docker system prune -a'  
+alias ddelimages='sudo docker rmi $(sudo docker images -q)'
+
+# FIXED (quote)
+
+dlogsize() {
+    sudo docker ps -q \
+    | xargs -r sudo docker inspect --format='{{.Name}} {{.LogPath}}' \
+    | while read name path; do
+        size=$(sudo du -h "$path" 2>/dev/null | cut -f1)
+        echo "$size $name"
+    done | sort -h
+}
+
+#------------------------------------------------------------------------------
+# Nextcloud
+#------------------------------------------------------------------------------
+alias occ='docker exec -i -u www-data `docker ps -qf "name=nextcloud-1"` php /var/www/html/occ'
+
+#------------------------------------------------------------------------------
+# SYSTEM NAV
+#------------------------------------------------------------------------------
+
+alias ..='cd ..'  
+alias ...='cd ../..'  
+alias .3='cd ../../..'  
+alias .4='cd ../../../..'  
+alias .5='cd ../../../../..'  
+
+#------------------------------------------------------------------------------
+# LS / FILES
+#------------------------------------------------------------------------------
+
+alias ls='ls -F --color=auto --group-directories-first'  
+alias ll='ls -alh --color=auto --group-directories-first'  
+alias lt='ls --human-readable --size -1 -S --classify'  
+alias lsr='ls -t -1'
+
+alias mkdir='mkdir -pv'  
+alias cp='cp -iv'  
+alias mv='mv -iv'
+
+#------------------------------------------------------------------------------
+# DISK / USAGE
+#------------------------------------------------------------------------------
+
+alias space='du -sh * | sort -hr'  
+alias disks='lsblk -o NAME,SIZE,TYPE,MOUNTPOINT'  
+alias diskusage='df -hl --total | grep total'
+
+#------------------------------------------------------------------------------
+# PROCESS / PERF
+#------------------------------------------------------------------------------
+
+alias psmem10='ps auxf | sort -nr -k 4 | head -10'  
+alias pscpu10='ps auxf | sort -nr -k 3 | head -10'  
+alias meminfo='free -h'
+
+#------------------------------------------------------------------------------
+# NETWORK
+#------------------------------------------------------------------------------
+
+alias ports='netstat -tulanp'  
+alias myip='curl -s ifconfig.me'  
+alias localip='hostname -I | awk "{print $1}"'
+
+#------------------------------------------------------------------------------
+# SYSTEMCTL
+#------------------------------------------------------------------------------
+
+alias ctlstart='sudo systemctl start'  
+alias ctlstop='sudo systemctl stop'  
+alias ctlrestart='sudo systemctl restart'  
+alias ctlstatus='sudo systemctl status'
+
+#------------------------------------------------------------------------------
+# PACKAGE MANAGEMENT
+#------------------------------------------------------------------------------
+
+# APT Package Management
+alias update='sudo apt update'      # Update package index
+alias upgrade='sudo apt update && sudo apt full-upgrade'      # Update package index and upgrade all packages
+
+#------------------------------------------------------------------------------
+# FILE COMPRESSION
+#------------------------------------------------------------------------------
+
+# Archive Management
+alias untargz='tar --same-owner -zxvf'      # Extract .tar.gz archive preserving ownership
+alias untarbz='tar --same-owner -xjvf'      # Extract .tar.bz2 archive preserving ownership
+alias lstargz='tar -ztvf'      # List contents of .tar.gz archive
+alias lstarbz='tar -jtvf'      # List contents of .tar.bz2 archive
+alias targz='tar -zcvf'      # Create .tar.gz archive
+alias tarbz='tar -cjvf'      # Create .tar.bz2 archive
+
+#------------------------------------------------------------------------------
+# SHORTCUTS
+#------------------------------------------------------------------------------
+
+alias reload='source ~/.bashrc'  
+alias aliases='vi ~/.bash_aliases'  
+alias bashrc='vi ~/.bashrc'

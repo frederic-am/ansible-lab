@@ -1,0 +1,3 @@
+{% for exclude in hostvars[host].backup_excludes | default([]) %}
+{{ exclude }}
+{% endfor %}

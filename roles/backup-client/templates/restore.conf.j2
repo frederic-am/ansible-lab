@@ -1,0 +1,6 @@
+# service;db_type;compose_service;database;user
+
+{% for service in backup_restore_services | default([]) %}
+{{ service.service }};{{ service.db_type }};{{ service.compose_service }};{{ service.database }};{{ service.user }}
+{% endfor %}
+

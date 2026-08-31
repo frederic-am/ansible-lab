@@ -1,0 +1,160 @@
+Oui. Faisons une cartographie **réelle** de ton état cible, basée sur ce que tu as construit.
+
+Je la structure par machine.
+
+---
+
+# Proxmox host (`pmx-fr-gbe-prod-01`)
+
+### INPUT
+
+| Port     |    Source | Usage      |
+| -------- | --------: | ---------- |
+| 22/tcp   | LAN/admin | SSH        |
+| 8006/tcp | LAN/admin | UI Proxmox |
+
+---
+
+### FORWARD
+
+## VLAN10 (`proxy`)
+
+| Source      | Destination | Port | Usage       |
+| ----------- | ----------- | ---: | ----------- |
+| 10.35.10.14 | all         |   22 | Bastion SSH |
+
+---
+
+## VLAN10 → VLAN20
+
+| Source      | Destination | Port |
+| ----------- | ----------- | ---: |
+| 10.35.10.10 | 10.35.20.10 | 3000 |
+
+Gitea.
+
+---
+
+## VLAN30 (`monitor`)
+
+| Source      | Destination | Port |
+| ----------- | ----------- | ---: |
+| 10.35.30.10 | all         | 9100 |
+
+Prometheus scrape.
+
+---
+
+## VLAN40 (`backup`)
+
+| Source      | Destination | Port |
+| ----------- | ----------- | ---: |
+| 10.35.40.10 | 10.35.20.10 |   22 |
+| 10.35.40.10 | 10.35.20.10 |  873 |
+
+Backup / rsync.
+
+---
+
+## DNS
+
+| Source       | Destination  |       Port |
+| ------------ | ------------ | ---------: |
+| 10.35.0.0/16 | 192.168.0.62 | 53 TCP/UDP |
+
+---
+
+## Internet
+
+| Source       | Destination | Port |
+| ------------ | ----------- | ---: |
+| 10.35.0.0/16 | any         |   80 |
+| 10.35.0.0/16 | any         |  443 |
+
+---
+
+## Diagnostic
+
+| Source       | Destination  | Port |
+| ------------ | ------------ | ---: |
+| 10.35.0.0/16 | 10.35.0.0/16 | ICMP |
+
+Important pour ton lab.
+
+---
+
+# `vm-proxy-01`
+
+### INPUT
+
+| Port |        Source | Usage |
+| ---- | ------------: | ----- |
+| 22   | Bastion/admin | SSH   |
+| 80   |      Internet | HTTP  |
+| 443  |      Internet | HTTPS |
+
+Optionnel :
+
+| Port |        Source | Usage         |
+| ---- | ------------: | ------------- |
+| 9100 | vm-monitor-01 | node_exporter |
+
+---
+
+# `vm-app-01`
+
+### INPUT
+
+| Port |        Source | Usage         |
+| ---- | ------------: | ------------- |
+| 22   |       Bastion | SSH           |
+| 3000 |   vm-proxy-01 | Gitea         |
+| 9100 | vm-monitor-01 | node_exporter |
+| 873  |  ct-backup-01 | rsync         |
+
+---
+
+# `vm-monitor-01`
+
+### INPUT
+
+| Port |                      Source | Usage         |
+| ---- | --------------------------: | ------------- |
+| 22   |                     Bastion | SSH           |
+| 9090 |               Admin / proxy | Prometheus    |
+| 3000 |               Admin / proxy | Grafana       |
+| 9100 | vm-monitor-01 (self scrape) | node_exporter |
+
+---
+
+# `ct-backup-01`
+
+### INPUT
+
+| Port |        Source | Usage         |
+| ---- | ------------: | ------------- |
+| 22   |       Bastion | SSH           |
+| 9100 | vm-monitor-01 | node_exporter |
+
+---
+
+# `ct-bastion-01`
+
+### INPUT
+
+| Port |    Source | Usage |
+| ---- | --------: | ----- |
+| 22   | LAN/admin | SSH   |
+
+---
+
+Règle simple pour ton futur rôle firewall machine :
+
+```text id="4k2swe"
+deny all inbound
+allow only explicit service ports
+allow monitor -> 9100
+allow bastion -> 22
+```
+
+C’est ton modèle propre. Garde-le. C’est déjà une architecture cohérente pour portfolio.

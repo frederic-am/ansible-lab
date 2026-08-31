@@ -1,0 +1,4 @@
+# container;type;database;user;password_env
+{% for db in backup_db_services | default([]) %}
+{{ db.container }};{{ db.type }};{{ db.database }};{{ db.user }};{{ db.password_env | default('') }}
+{% endfor %}

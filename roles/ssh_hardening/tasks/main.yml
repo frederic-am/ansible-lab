@@ -1,0 +1,19 @@
+- name: Vérifier qu'on a au moins un user non-root avec clé SSH
+  import_tasks: validate.yml
+  when: not ansible_check_mode
+
+- name: SSH | Interdire auth par mot de passe
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PasswordAuthentication'
+    line: 'PasswordAuthentication no'
+    validate: 'sshd -t -f %s'
+  notify: restart ssh
+
+- name: SSH | Définir PermitRootLogin
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PermitRootLogin'
+    line: "PermitRootLogin {{ ssh_permit_root_login }}"
+    validate: 'sshd -t -f %s'
+  notify: restart ssh
