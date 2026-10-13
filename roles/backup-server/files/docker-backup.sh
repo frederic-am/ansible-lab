@@ -45,7 +45,7 @@ echo "[INFO] Source: $REMOTE_PATH → $BASE" >> "$LOG"
 ########################################
 
 if [ -L "$BASE/current" ] && [ -d "$(readlink -f "$BASE/current")" ]; then
-    LINK_DEST="--link-dest=$BASE/current"
+    LINK_DEST="--link-dest=$(readlink -f "$BASE/current")"
 else
     LINK_DEST=""
 fi
@@ -142,7 +142,7 @@ for d in "$BASE"/docker-*; do
     [ -d "$d" ] || continue
     [ "$d" = "$BASE/docker-$DATE" ] && continue
 
-    DATE_DIR=$(basename "$d" | cut -d- -f2-)
+    DATE_DIR=$(basename "$d" | sed -E 's/^docker-([0-9]{4}-[0-9]{2}-[0-9]{2})-[0-9]{6}$/\1/')
     date -d "$DATE_DIR" >/dev/null 2>&1 || continue
 
     AGE=$(( ( $(date +%s) - $(date -d "$DATE_DIR" +%s) ) / 86400 ))
