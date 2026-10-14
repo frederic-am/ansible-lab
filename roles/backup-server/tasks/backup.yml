@@ -69,6 +69,14 @@
     - /srv/backups/docker
     - /var/log/docker-backup
 
+- name: Create metrics directory
+  ansible.builtin.file:
+    path: /var/lib/node_exporter/textfile_collector
+    state: directory
+    owner: backup_runner
+    group: backup_runner
+    mode: "0755"
+
 - name: Install cron jobs
   cron:
     name: "docker backup {{ item }}"
