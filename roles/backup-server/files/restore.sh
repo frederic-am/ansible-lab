@@ -11,6 +11,7 @@ SCRIPT_NAME="$(basename "$0")"
 SSH_USER="backup_admin"
 SSH_KEY="/home/backup_admin/.ssh/backup_restore"
 RESTORE_DIR="/var/tmp/restore-$(date +%Y%m%d-%H%M%S)"
+RESTORE_CONFIG_DIR="/etc/backup/restore"
 
 #
 # Logging
@@ -65,11 +66,43 @@ validate_snapshot() {
         || die "Snapshot '$snapshot' not found."
 }
 
+load_service_config() {
+
+    local config="$RESTORE_CONFIG_DIR/$TARGET.conf"
+    local name db_type db_container compose_service database user
+
+    [[ -f "$config" ]] \
+        || die "Restore configuration not found: $config"
+
+    while IFS=';' read -r name db_type db_container compose_service database user; do
+        [[ -z "$name" || "$name" =~ ^# ]] && continue
+        [[ "$name" != "$SERVICE" ]] && continue
+
+        [[ "$db_container" == "ERROR_DB_MAPPING" ]] \
+            && die "Invalid database mapping for service '$SERVICE'."
+
+        SERVICE_DB_TYPE="$db_type"
+        SERVICE_DB_CONTAINER="$db_container"
+
+        if [[ "$SERVICE_DB_TYPE" != "none" ]]; then
+            [[ -n "$SERVICE_DB_CONTAINER" ]] \
+                || die "Database container not configured for '$SERVICE'."
+        fi
+
+        return 0
+    done < "$config"
+
+    die "Service '$SERVICE' not found in $config."
+}
+
 validate_database_backup() {
 
-    local dump="$BACKUP_ROOT/$SNAPSHOT/backups/${SERVICE}-db.sql"
+    [[ "$SERVICE_DB_TYPE" == "none" ]] && return 0
 
-    [[ -f "$dump" ]] || return 0
+    local dump="$BACKUP_ROOT/$SNAPSHOT/backups/${SERVICE_DB_CONTAINER}.sql"
+
+    [[ -f "$dump" ]] \
+        || die "Database dump not found: $dump"
 }
 
 validate_remote_access() {
@@ -133,9 +166,11 @@ copy_restore_files() {
         "$SSH_USER@$TARGET:$RESTORE_DIR/$SERVICE/" \
         || die "Unable to copy service files."
 
-    local dump="$BACKUP_ROOT/$SNAPSHOT/backups/${SERVICE}-db.sql"
+    if [[ "$SERVICE_DB_TYPE" != "none" ]]; then
+        local dump="$BACKUP_ROOT/$SNAPSHOT/backups/${SERVICE_DB_CONTAINER}.sql"
 
-    if [[ -f "$dump" ]]; then
+        [[ -f "$dump" ]] \
+            || die "Database dump not found: $dump"
 
         log "Copying database dump..."
 
@@ -163,7 +198,8 @@ SNAPSHOT="$3"
 validate_target "$TARGET"
 validate_snapshot "$SNAPSHOT"
 validate_service "$SERVICE"
-validate_database_backup "$SERVICE"
+load_service_config
+validate_database_backup
 
 validate_remote_access
 validate_remote_restore_script

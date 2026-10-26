@@ -45,6 +45,29 @@
     group: root
     mode: "0644"
 
+- name: Read local restore configuration
+  ansible.builtin.slurp:
+    src: /etc/backup/restore.conf
+  register: local_restore_config
+
+- name: Create restore configuration directory on backup server
+  ansible.builtin.file:
+    path: /etc/backup/restore
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  delegate_to: "{{ groups['backup'][0] }}"
+
+- name: Send restore configuration to backup server
+  ansible.builtin.copy:
+    content: "{{ local_restore_config.content | b64decode }}"
+    dest: "/etc/backup/restore/{{ inventory_hostname }}.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  delegate_to: "{{ groups['backup'][0] }}"
+
 - name: Install docker-restore.sh
   ansible.builtin.copy:
     src: docker-restore.sh
@@ -52,5 +75,3 @@
     owner: root
     group: root
     mode: "0755"
-
-

@@ -9,13 +9,14 @@ RESTORE_DIR="$2"
 
 SERVICE_DIR="/srv/docker/$SERVICE"
 BACKUP_DIR="$RESTORE_DIR/$SERVICE"
-DB_BACKUP="$RESTORE_DIR/${SERVICE}-db.sql"
+DB_BACKUP=""
 RESTORE_CONF="/etc/backup/restore.conf"
 
 SERVICE_DB_TYPE=""
 SERVICE_DB_SERVICE=""
 SERVICE_DB_NAME=""
 SERVICE_DB_USER=""
+SERVICE_DB_CONTAINER=""
 
 
 log() {
@@ -49,16 +50,26 @@ validate_database_backup() {
 
 load_service_config() {
 
-    while IFS=';' read -r SERVICE_NAME DB_TYPE DB_SERVICE DB_NAME DB_USER; do
+    while IFS=';' read -r SERVICE_NAME DB_TYPE DB_CONTAINER DB_SERVICE DB_NAME DB_USER; do
 
         [[ -z "$SERVICE_NAME" || "$SERVICE_NAME" =~ ^# ]] && continue
-
         [[ "$SERVICE_NAME" != "$SERVICE" ]] && continue
 
+        [[ "$DB_CONTAINER" == "ERROR_DB_MAPPING" ]] \
+            && die "Invalid database mapping for service '$SERVICE'."
+
         SERVICE_DB_TYPE="$DB_TYPE"
+        SERVICE_DB_CONTAINER="$DB_CONTAINER"
         SERVICE_DB_SERVICE="$DB_SERVICE"
         SERVICE_DB_NAME="$DB_NAME"
         SERVICE_DB_USER="$DB_USER"
+
+        if [[ "$SERVICE_DB_TYPE" != "none" ]]; then
+            [[ -n "$SERVICE_DB_CONTAINER" ]] \
+                || die "Database container not configured for service '$SERVICE'."
+
+            DB_BACKUP="$RESTORE_DIR/${SERVICE_DB_CONTAINER}.sql"
+        fi
 
         return 0
 

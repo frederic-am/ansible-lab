@@ -28,6 +28,14 @@
     owner: root
     group: root
     mode: "0755"
+
+- name: Create restore configuration directory
+  ansible.builtin.file:
+    path: /etc/backup/restore
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
     
 - name: Generate exclude files
   ansible.builtin.template:

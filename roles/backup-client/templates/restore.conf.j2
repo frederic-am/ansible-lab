@@ -1,6 +1,11 @@
-# service;db_type;compose_service;database;user
-
+# service;db_type;db_container;compose_service;database;user
 {% for service in backup_restore_services | default([]) %}
-{{ service.service }};{{ service.db_type }};{{ service.compose_service }};{{ service.database }};{{ service.user }}
+{% set matching_dbs = backup_db_services | default([]) | selectattr('database', 'equalto', service.database) | selectattr('user', 'equalto', service.user) | list %}
+{% if service.db_type == 'none' %}
+{{ service.service }};none;;{{ service.compose_service }};{{ service.database }};{{ service.user }}
+{% elif matching_dbs | length == 1 %}
+{{ service.service }};{{ service.db_type }};{{ matching_dbs[0].container }};{{ service.compose_service }};{{ service.database }};{{ service.user }}
+{% else %}
+{{ service.service }};{{ service.db_type }};ERROR_DB_MAPPING;{{ service.compose_service }};{{ service.database }};{{ service.user }}
+{% endif %}
 {% endfor %}
-
