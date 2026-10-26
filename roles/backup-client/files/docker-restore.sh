@@ -110,7 +110,6 @@ wait_database() {
         if docker compose \
             -f "$SERVICE_DIR/docker-compose.yml" \
             exec -T "$SERVICE_DB_SERVICE" \
-            env PGPASSWORD="$SERVICE_DB_USER" \
             psql \
                 -U "$SERVICE_DB_USER" \
                 -d "$SERVICE_DB_NAME" \
@@ -141,7 +140,6 @@ restore_database() {
     docker compose \
         -f "$SERVICE_DIR/docker-compose.yml" \
         exec -T "$SERVICE_DB_SERVICE" \
-        env PGPASSWORD="$SERVICE_DB_USER" \
         psql \
 	    -v ON_ERROR_STOP=1 \
             -U "$SERVICE_DB_USER" \
